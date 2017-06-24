@@ -2,7 +2,7 @@
 import RPi.GPIO as GPIO
 import sys
 import time
-import Car
+import Car,Driver
 
 def checkController():
     print("Checking... Please you should now check your Autobot status to see if that is right.")
@@ -60,7 +60,17 @@ def run_console():
 
 def testCar():
     mc = Car.Car()
+    mc.set_Driver(Driver.DrunkDriver())
     mc.start()
     
 if __name__ =='__main__':
-    run_console()
+    if len(sys.argv)<2:
+        print("Run like this:\n -testCar  \n -run_console \n -checkController\n")
+        exit()
+    if sys.argv[1]=="-testCar":
+        testCar()
+    elif sys.argv[1]=="-run_console":
+        run_console();
+    elif sys.argv[1]=="-checkController":
+        checkController()
+

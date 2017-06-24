@@ -1,17 +1,16 @@
 #!/usr/bin/python
 import RPi.GPIO as GPIO
-import sys
-import time,random
+import Driver,Sensor
 
+##These are GPIO serior ports.
 FWD= 14
 BAK= 15
 LEFT = 17
 RIGHT = 18
+#These are defined states.
 KEEP = 10000
 STOP = 10001
 MIDDLE = 10002
-
-STEPSIZE = 0.001
 
 class Controller:
     def __init__(self):
@@ -68,9 +67,9 @@ class Controller:
         GPIO.output(RIGHT,GPIO.HIGH)
         self.STATE_X = MIDDLE
 
-    def keep(self,steps=0):
-        print("keep",steps)
-        time.sleep(STEPSIZE*steps)
+    def keep(self):
+        #do nothing here.
+        print("keep")
     
     def handleMove(self, movement):
         if movement==FWD:
@@ -86,33 +85,33 @@ class Controller:
         elif movement == MIDDLE:
             self.middle()
         elif movement == KEEP:
-            self.keep(100)
-
-class EventEmitter:
-    def __init__(self):
-        pass
+            self.keep()
 
 class Car:
     def __init__(self):
         self.ctrl = Controller()
-        self.operations=[FWD,BAK,LEFT,RIGHT,KEEP,STOP,MIDDLE]
+        self.driver = Driver.DeadDirver()
+        self.sensors = []
+        self.add_Sensor(Sensor.SonarSensor())
 
-    def get_Controller():
+    def get_Controller(self):
         return self.ctrl
+    
+    def set_Driver(self, newDriver):
+        self.driver = newDriver
 
-    def operation_emit_random(self):
-        event = random.randint(0,len(self.events)-1)
-        return self.events[event]
+    def add_Sensor(self, newSensor):
+        self.sensors.append(newSensor)
 
-    def start(self):
-        try:
-            while True:
-                op = self.operation_emmit_random()
-                self.ctrl.handleMove(op)
-                self.ctrl.handleMove(KEEP)
-        except  Exception as ex:
-            print ex
-        finally:
-            self.ctrl.handleMove(STOP)
-            self.ctrl.handleMove(MIDDLE)
-            GPIO.cleanup()
+    def step(self):
+        op = self.driver.getNextOP()
+        self.ctrl.handleMove(op)
+        for sensor in self.sensors:
+            sensor.step()
+            sdata = sensor.readData()
+            self.driver.haveDataFromSensor(sdata)
+    
+    def destory(self):
+        self.ctrl.handleMove(STOP)
+        self.ctrl.handleMove(MIDDLE)
+        GPIO.cleanup()
